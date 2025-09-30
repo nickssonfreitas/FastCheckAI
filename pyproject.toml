@@ -1,0 +1,74 @@
+[project]
+name = "fastcheckai"
+version = "0.1.0"
+description = "PoC for automated comparison of technical PDF documents using Agno framework"
+requires-python = ">=3.12"
+dependencies = [
+    "agno>=2.0.11",
+    "diff-match-patch>=20241021",
+    "easyocr>=1.7.2",
+    "jupyter>=1.0.0",
+    "jupyterlab>=4.4.9",
+    "matplotlib>=3.10.6",
+    "notebook>=7.0.0",
+    "numpy>=1.24.0",
+    "openai>=1.0.0",
+    "pandas>=2.3.3",
+    "pdfplumber>=0.11.7",
+    "pymupdf>=1.23.0",
+    "pytesseract>=0.3.13",
+    "python-dotenv>=1.0.0",
+    "python-levenshtein>=0.27.1",
+    "rapidfuzz>=3.14.1",
+    "seaborn>=0.13.2",
+    "tabulate>=0.9.0",
+    "tqdm>=4.67.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "ruff>=0.1.0",
+    "mypy>=1.7.0",
+    "bandit>=1.7.5",
+    "pre-commit>=3.5.0",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = false
+check_untyped_defs = true
+no_implicit_optional = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+strict_equality = true
+
+[[tool.mypy.overrides]]
+module = "agno.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "pdfplumber.*"
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "pymupdf.*"
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = "-v --cov=src --cov-report=term-missing --cov-report=html"
