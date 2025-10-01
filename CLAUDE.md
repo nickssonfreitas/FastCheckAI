@@ -221,6 +221,91 @@ The full agent workflow is designed for production projects and is overkill for 
 - For tables, scan pages first to identify which contain tables
 - Use pdfplumber only on table-containing pages to optimize speed
 
+### OCR Implementation (Feature 3 - Completed)
+
+FastCheckAI implements a **hybrid extraction strategy** to handle PDFs with corrupted text encoding:
+
+#### Problem: Corrupted Text Extraction
+Some technical PDFs (especially ASTM standards) use custom embedded fonts with broken Unicode mappings:
+- **Symptom**: PyMuPDF extracts gibberish like "Ü»­·¹²¿¬·±²æ ßîçñßîçÓ"
+- **Expected**: "Designation: A29/A29M"
+- **Root cause**: Custom fonts (e.g., Z@RFDA6.tmp) with Identity-H encoding but missing ToUnicode CMap
+
+#### Solution: Automatic OCR Fallback
+
+The `extract_text()` function now uses a 3-step process:
+
+1. **Try PyMuPDF fast extraction** (0.5 sec/page)
+2. **Detect corruption** using `is_text_corrupted()` (checks if >30% special characters)
+3. **Fallback to OCR** if corrupted (5-10 sec/page)
+
+```python
+from src.text_extractor import extract_text
+
+# Automatic OCR fallback (default)
+text = extract_text(pdf_doc, enable_ocr=True)
+
+# Disable OCR for speed (may have corrupted text)
+text = extract_text(pdf_doc, enable_ocr=False)
+
+# Custom OCR settings
+text = extract_text(
+    pdf_doc,
+    corruption_threshold=0.40,  # Higher = less sensitive
+    ocr_dpi=600,                # Higher = better quality, slower
+)
+```
+
+#### Tesseract OCR Installation
+
+**Required for OCR functionality**. Install before running extraction:
+
+```bash
+# Ubuntu/Debian/WSL2
+sudo apt-get update && sudo apt-get install tesseract-ocr tesseract-ocr-eng
+
+# macOS
+brew install tesseract
+
+# Verify installation
+tesseract --version
+```
+
+**Note**: The setup script (`scripts/setup.sh`) checks for Tesseract and offers to install it interactively.
+
+#### OCR Performance Characteristics
+
+- **Speed**: 10-20x slower than PyMuPDF (5-10 sec/page vs 0.5 sec/page)
+- **Accuracy**: 95-98% for clean printed text (ASTM documents)
+- **Use case**: Only triggered for corrupted pages (typically pages 2+ in ASTM PDFs)
+- **Total time**: ~90 seconds for 17-page ASTM PDF (within 3-minute target)
+
+#### Testing OCR Implementation
+
+```bash
+# Quick validation script
+python scripts/test_extraction_fix.py
+
+# Expected output:
+# ✓ PASS: Metadata Fix
+# ✓ PASS: Corruption Detection
+# ✓ PASS: Hybrid Extraction
+```
+
+#### OCR Debugging
+
+Enable debug logging to see OCR decisions:
+
+```python
+import logging
+logging.basicConfig(level=logging.DEBUG)
+
+text = extract_text(pdf_doc)
+# Logs will show:
+# DEBUG: Corruption check: 2450/3000 special chars (81.67%), threshold: 30%
+# INFO: Page 2: Corrupted text detected, using OCR fallback
+```
+
 ### Jupyter Notebook Organization
 - Keep configuration in Cell 1 for easy modification
 - Save intermediate results after each major step

@@ -248,19 +248,19 @@ jupyter>=1.0.0
 ### 4.1 Opção A: Stack Baseado em Agno
 
 #### Prós
-✅ **Performance Excepcional:** Agno é ~10.000x mais rápido que LangGraph (2μs/agent vs 20ms/agent)
-✅ **Overhead Mínimo:** Agentes Agno usam ~3.75 KiB memória (50x menos que LangGraph)
-✅ **Simplicidade:** Python puro, sem abstrações complexas, código limpo
-✅ **Aprendizado Alinhado:** Atende objetivo explícito do desenvolvedor de aprender Agno
-✅ **Tabelas Precisas:** pdfplumber é superior para extração de tabelas (RF-007, RF-023-026)
-✅ **Custo Baixo:** GPT-3.5-turbo + libs open-source = sem custos surpresa
+- ✅ **Performance Excepcional:** Agno é ~10.000x mais rápido que LangGraph (2μs/agent vs 20ms/agent)
+- ✅ **Overhead Mínimo:** Agentes Agno usam ~3.75 KiB memória (50x menos que LangGraph)
+- ✅ **Simplicidade:** Python puro, sem abstrações complexas, código limpo
+- ✅ **Aprendizado Alinhado:** Atende objetivo explícito do desenvolvedor de aprender Agno
+- ✅ **Tabelas Precisas:** pdfplumber é superior para extração de tabelas (RF-007, RF-023-026)
+- ✅ **Custo Baixo:** GPT-3.5-turbo + libs open-source = sem custos surpresa
 
 #### Contras
-❌ **Framework Novo:** Lançado Set/2025, comunidade pequena, poucos exemplos práticos
-❌ **Documentação Limitada:** Menos tutoriais/cookbooks comparado a LangChain
-❌ **Risco de Bugs:** Framework imaturo pode ter edge cases não documentados
-❌ **Tesseract OCR:** Acurácia ~70% (inferior a EasyOCR), mas suficiente para PoC
-❌ **pdfplumber Lento:** 60x mais lento que PyMuPDF para PDFs grandes (mas 25MB ainda processável em <3min)
+- ❌ **Framework Novo:** Lançado Set/2025, comunidade pequena, poucos exemplos práticos
+- ❌ **Documentação Limitada:** Menos tutoriais/cookbooks comparado a LangChain
+- ❌ **Risco de Bugs:** Framework imaturo pode ter edge cases não documentados
+- ❌ **Tesseract OCR:** Acurácia ~70% (inferior a EasyOCR), mas suficiente para PoC
+- ❌ **pdfplumber Lento:** 60x mais lento que PyMuPDF para PDFs grandes (mas 25MB ainda processável em <3min)
 
 #### Quando Usar
 - Objetivo principal é **aprender Agno** (requisito do projeto)
@@ -279,20 +279,20 @@ jupyter>=1.0.0
 ### 4.2 Opção B: Stack Baseado em LangChain
 
 #### Prós
-✅ **Maturidade:** Framework consolidado desde 2022, battle-tested em produção
-✅ **Comunidade Massiva:** 80K+ GitHub stars, suporte corporativo (LangChain Inc.)
-✅ **Documentação Extensa:** Tutoriais, cookbooks, cursos (DataCamp, DeepLearning.AI)
-✅ **Features Out-of-Box:** Embeddings, vector stores (FAISS), memory, chains pré-configuradas
-✅ **PyMuPDF Rápido:** 60x mais rápido que pdfplumber (42ms vs 2.5s), essencial para ≤3min target
-✅ **EasyOCR Superior:** ~85-90% acurácia vs ~70% Tesseract
+- ✅ **Maturidade:** Framework consolidado desde 2022, battle-tested em produção
+- ✅ **Comunidade Massiva:** 80K+ GitHub stars, suporte corporativo (LangChain Inc.)
+- ✅ **Documentação Extensa:** Tutoriais, cookbooks, cursos (DataCamp, DeepLearning.AI)
+- ✅ **Features Out-of-Box:** Embeddings, vector stores (FAISS), memory, chains pré-configuradas
+- ✅ **PyMuPDF Rápido:** 60x mais rápido que pdfplumber (42ms vs 2.5s), essencial para ≤3min target
+- ✅ **EasyOCR Superior:** ~85-90% acurácia vs ~70% Tesseract
 
 #### Contras
-❌ **Curva de Aprendizado:** Framework complexo, muitas abstrações (Chains, Agents, Tools, Memory)
-❌ **Verboso:** Boilerplate considerável, código menos direto
-❌ **Overhead de Memória:** Agentes pesados (~187 KiB vs 3.75 KiB Agno)
-❌ **Tabelas Limitadas:** PyMuPDF não tem ferramentas dedicadas para tabelas complexas
-❌ **EasyOCR Requer GPU:** Performance degrada em CPU-only (PoC local pode não ter GPU)
-❌ **Não Atende Objetivo:** Desenvolvedor quer aprender Agno, não LangChain
+- ❌ **Curva de Aprendizado:** Framework complexo, muitas abstrações (Chains, Agents, Tools, Memory)
+- ❌ **Verboso:** Boilerplate considerável, código menos direto
+- ❌ **Overhead de Memória:** Agentes pesados (~187 KiB vs 3.75 KiB Agno)
+- ❌ **Tabelas Limitadas:** PyMuPDF não tem ferramentas dedicadas para tabelas complexas
+- ❌ **EasyOCR Requer GPU:** Performance degrada em CPU-only (PoC local pode não ter GPU)
+- ❌ **Não Atende Objetivo:** Desenvolvedor quer aprender Agno, não LangChain
 
 #### Quando Usar
 - **Prazo apertado** e desenvolvedor já conhece LangChain
@@ -311,19 +311,19 @@ jupyter>=1.0.0
 ### 4.3 Opção C: Stack Híbrido (RECOMENDADO)
 
 #### Prós
-✅ **Best-of-Breed:** PyMuPDF (velocidade) + pdfplumber (tabelas) + Agno (orchestração)
-✅ **Controle Granular:** Algoritmo de alinhamento customizado (heurística + LLM fallback)
-✅ **Aprendizado Agno:** Atende objetivo sem comprometer prazo (Agno só para LLM orchestration)
-✅ **Performance Otimizada:** PyMuPDF para texto (rápido), pdfplumber seletivo para tabelas
-✅ **Flexibilidade:** Fácil trocar componentes (ex: GPT-3.5 → GPT-4, Tesseract → EasyOCR)
-✅ **Risco Mitigado:** Se Agno bloquear, fallback para chamadas OpenAI diretas trivial
-✅ **Custo Baixo:** GPT-3.5 + libs open-source
+- ✅ **Best-of-Breed:** PyMuPDF (velocidade) + pdfplumber (tabelas) + Agno (orchestração)
+- ✅ **Controle Granular:** Algoritmo de alinhamento customizado (heurística + LLM fallback)
+- ✅ **Aprendizado Agno:** Atende objetivo sem comprometer prazo (Agno só para LLM orchestration)
+- ✅ **Performance Otimizada:** PyMuPDF para texto (rápido), pdfplumber seletivo para tabelas
+- ✅ **Flexibilidade:** Fácil trocar componentes (ex: GPT-3.5 → GPT-4, Tesseract → EasyOCR)
+- ✅ **Risco Mitigado:** Se Agno bloquear, fallback para chamadas OpenAI diretas trivial
+- ✅ **Custo Baixo:** GPT-3.5 + libs open-source
 
 #### Contras
-❌ **Complexidade de Integração:** Gerenciar 2 bibliotecas de PDF (PyMuPDF + pdfplumber)
-❌ **Tesseract OCR:** Ainda ~70% acurácia (mas suficiente para PoC)
-❌ **Código Customizado:** Alinhamento heurístico requer desenvolvimento (não out-of-box)
-❌ **Documentação Fragmentada:** Precisar consultar docs de múltiplas bibliotecas
+- ❌ **Complexidade de Integração:** Gerenciar 2 bibliotecas de PDF (PyMuPDF + pdfplumber)
+- ❌ **Tesseract OCR:** Ainda ~70% acurácia (mas suficiente para PoC)
+- ❌ **Código Customizado:** Alinhamento heurístico requer desenvolvimento (não out-of-box)
+- ❌ **Documentação Fragmentada:** Precisar consultar docs de múltiplas bibliotecas
 
 #### Quando Usar
 - **PoC com prazo apertado** mas objetivo de **aprender Agno**

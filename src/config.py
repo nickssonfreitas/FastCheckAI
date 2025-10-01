@@ -148,6 +148,23 @@ MAX_PROCESSING_TIME_SECONDS: int = int(
 """Maximum processing time for end-to-end pipeline (seconds)."""
 
 # =============================================================================
+# OCR Configuration (Feature 3)
+# =============================================================================
+
+ENABLE_OCR: bool = get_env_variable("ENABLE_OCR", required=False, default="true").lower() == "true"
+"""Enable automatic OCR fallback for corrupted PDFs (requires Tesseract)."""
+
+OCR_CORRUPTION_THRESHOLD: float = float(
+    get_env_variable("OCR_CORRUPTION_THRESHOLD", required=False, default="0.30")
+)
+"""Corruption detection threshold (0.0-1.0). Higher = less sensitive.
+Default 0.30 means OCR triggers when >30% of characters are non-ASCII."""
+
+OCR_DPI: int = int(get_env_variable("OCR_DPI", required=False, default="300"))
+"""OCR rendering resolution in DPI. Higher = better quality but slower.
+Recommended: 300 (standard), 600 (high quality), 150 (fast)."""
+
+# =============================================================================
 # Paths
 # =============================================================================
 
