@@ -290,9 +290,12 @@ def detect_table_pages(
             import re
 
             table_patterns = [
-                r'TABLE\s+\d+',   # "TABLE 1", "TABLE 2"
-                r'Table\s+\d+',   # "Table 1", "Table 2"
+                r'TABLE\s+\d+',   # "TABLE 1", "TABLE 2" (normal)
+                r'Table\s+\d+',   # "Table 1", "Table 2" (normal)
                 r'FIG\.\s*\d+',   # "FIG. 1" (sometimes includes tables)
+                # OCR corruption patterns (common with corrupted fonts)
+                r'[ÌT][ßA][ÞB][ÔL][ÛE]\s+[\dï¹²³´µ]+',  # Corrupted "TABLE #"
+                r'[Tt]¿¾´»\s+\d+',                      # Corrupted "table"
             ]
 
             for page_num in range(total_pages):
