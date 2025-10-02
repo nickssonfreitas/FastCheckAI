@@ -12,7 +12,7 @@ Example:
 import logging
 import os
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 from dotenv import load_dotenv
 
@@ -163,6 +163,26 @@ Default 0.30 means OCR triggers when >30% of characters are non-ASCII."""
 OCR_DPI: int = int(get_env_variable("OCR_DPI", required=False, default="300"))
 """OCR rendering resolution in DPI. Higher = better quality but slower.
 Recommended: 300 (standard), 600 (high quality), 150 (fast)."""
+
+# =============================================================================
+# Text Comparison Configuration (Feature 6)
+# =============================================================================
+
+CRITICAL_TERMS: List[str] = [
+    "tensile strength",
+    "mandatory",
+    "shall",
+    "chemical composition",
+    "yield strength",
+    "required",
+    "must",
+    "elongation",
+    "hardness",
+    "impact",
+    "ductility",
+    "fracture",
+]
+"""List of critical technical terms for highlighting important changes."""
 
 # =============================================================================
 # Paths
