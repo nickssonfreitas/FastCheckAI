@@ -93,11 +93,19 @@ def create_semantic_agent() -> Agent:
     >>> print(response)
     """
     try:
+        # Import OpenAIChat model from agno
+        from agno.models.openai.chat import OpenAIChat
+
+        # Create OpenAI model with temperature setting
+        model = OpenAIChat(
+            id=config.MODEL,
+            temperature=config.TEMPERATURE
+        )
+
+        # Create agent with model object (not string)
         agent = Agent(
-            model=config.MODEL,
+            model=model,
             instructions=SEMANTIC_INSTRUCTIONS,
-            temperature=config.TEMPERATURE,
-            markdown=False,  # Return plain text/JSON
         )
 
         logger.info(f"Agno agent created: model={config.MODEL}, temperature={config.TEMPERATURE}")
@@ -170,8 +178,8 @@ Return ONLY valid JSON with this exact structure:
 
     # Parse JSON response
     try:
-        # Try to extract JSON from response
-        result = json.loads(response)
+        # Try to extract JSON from response.content (Agno returns Response object)
+        result = json.loads(response.content)
 
         # Validate required fields
         required_fields = ["classification", "confidence", "reasoning"]
@@ -199,16 +207,16 @@ Return ONLY valid JSON with this exact structure:
 
     except json.JSONDecodeError as e:
         logger.warning(f"Failed to parse JSON from Agno response: {e}")
-        logger.debug(f"Raw response: {response}")
+        logger.debug(f"Raw response: {response.content}")
 
         # Fallback: try regex extraction
         import re
 
         classification_match = re.search(
-            r'"classification":\s*"(EQUIVALENT|MINOR|SIGNIFICANT)"', response
+            r'"classification":\s*"(EQUIVALENT|MINOR|SIGNIFICANT)"', response.content
         )
-        confidence_match = re.search(r'"confidence":\s*(0\.\d+|1\.0)', response)
-        reasoning_match = re.search(r'"reasoning":\s*"([^"]+)"', response)
+        confidence_match = re.search(r'"confidence":\s*(0\.\d+|1\.0)', response.content)
+        reasoning_match = re.search(r'"reasoning":\s*"([^"]+)"', response.content)
 
         if classification_match and confidence_match and reasoning_match:
             result = {
@@ -219,7 +227,7 @@ Return ONLY valid JSON with this exact structure:
             logger.info("Successfully extracted classification via regex fallback")
             return result
         else:
-            raise ValueError(f"Failed to parse classification from response: {response}")
+            raise ValueError(f"Failed to parse classification from response: {response.content}")
 
 
 def _classify_with_openai_direct(diff: Dict) -> Dict:
