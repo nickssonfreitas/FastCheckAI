@@ -165,8 +165,8 @@ def detect_table_pages(
     horizontal_line_threshold: int = 10,
     vertical_line_threshold: int = 5,
     min_line_length: float = 20.0,
-    enable_text_detection: bool = True,
-) -> List[int]:
+    enable_text_detection: bool = True
+    ) -> List[int]:
     """Detect pages containing tables using hybrid detection approach.
 
     Uses two detection methods:
@@ -341,8 +341,7 @@ def detect_table_pages(
 def extract_tables(
     pdf_path: str,
     table_pages: List[int],
-    section_context: Optional[Dict[int, str]] = None,
-) -> TableExtractionResult:
+    section_context: Optional[Dict[int, str]] = None) -> TableExtractionResult:
     """Extract tables from specified pages using pdfplumber with hybrid strategies.
 
     Opens PDF with pdfplumber only for pages with detected tables.
@@ -469,7 +468,7 @@ def _convert_to_dataframe(
     table_index: int,
     section_context: Optional[str] = None,
     extraction_method: str = "pdfplumber_lines",
-) -> Optional[ExtractedTable]:
+    ) -> Optional[ExtractedTable]:
     """Convert raw pdfplumber table to pandas DataFrame with metadata.
 
     Args:
