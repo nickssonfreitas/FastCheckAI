@@ -33,6 +33,23 @@ Compare two versions of technical standards (e.g., ASTM A29/A29M 2015 vs 2016) t
 
 ## 🚀 Quick Start
 
+### One-Minute Test
+
+```bash
+# 1. Ativar ambiente
+source .venv/bin/activate
+
+# 2. Comparar dois PDFs
+python scripts/compare_pdfs.py data/inputs/doc1.pdf data/inputs/doc2.pdf
+
+# 3. Ver relatório
+cat data/outputs/comparison_report_*.md
+```
+
+📖 **Guia completo:** Veja [QUICKSTART.md](QUICKSTART.md) para mais exemplos e opções.
+
+---
+
 ### Prerequisites
 
 - **Python 3.12+** (required)
