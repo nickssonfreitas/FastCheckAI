@@ -29,7 +29,7 @@ import pytest
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from src.config import (
+from src.core.config import (
     ALIGNMENT_CONFIDENCE_THRESHOLD,
     FUZZY_MATCH_THRESHOLD,
     MAX_PDF_SIZE_MB,

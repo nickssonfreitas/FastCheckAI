@@ -34,7 +34,7 @@ import pytest
 # Add src to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from src.text_comparator import (
+from src.comparators.text_comparator import (
     TextComparisonError,
     compare_text,
     contains_critical_term,

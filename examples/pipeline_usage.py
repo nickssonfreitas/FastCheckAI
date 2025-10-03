@@ -12,7 +12,7 @@ from pathlib import Path
 if __name__ == "__main__":
     sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.pipeline import PDFComparisonPipeline
+from src.pipelines.semantic_comparison import PDFComparisonPipeline
 
 
 # =============================================================================
@@ -130,7 +130,7 @@ def example_error_handling():
     print("EXAMPLE 4: Error Handling")
     print("=" * 60)
 
-    from src.pipeline import PDFProcessingError, AlignmentError, LLMError
+    from src.core.exceptions import PDFProcessingError, AlignmentError, LLMError
 
     pipeline = PDFComparisonPipeline()
 

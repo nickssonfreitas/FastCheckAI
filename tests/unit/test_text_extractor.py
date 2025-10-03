@@ -29,7 +29,7 @@ from unittest.mock import MagicMock, patch
 import pymupdf as fitz
 import pytest
 
-from src.text_extractor import (
+from src.extractors.text_extractor import (
     SectionParsingError,
     TextExtractionError,
     _build_hierarchy,

@@ -24,7 +24,7 @@ from unittest.mock import MagicMock, patch
 import pymupdf as fitz
 import pytest
 
-from src.pdf_loader import (
+from src.extractors.pdf_loader import (
     PDFCorruptedError,
     PDFLoaderError,
     PDFSizeError,

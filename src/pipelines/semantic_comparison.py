@@ -31,49 +31,26 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Literal, Optional
 
-from src import config
-from src.pdf_loader import load_pdf
-from src.report_generator import generate_report, save_report
-from src.section_aligner import align_sections, get_section_by_id
-from src.semantic_comparator import (
+from src.core import config
+from src.extractors.pdf_loader import load_pdf
+from src.reporters.report_generator import generate_report, save_report
+from src.processing.section_aligner import align_sections, get_section_by_id
+from src.comparators.semantic_comparator import (
     create_semantic_agent,
     classify_semantic_significance,
     get_semantic_stats,
 )
-from src.table_extractor import extract_tables_from_pdf
-from src.text_comparator import compare_text
-from src.text_extractor import extract_text, parse_section_hierarchy
+from src.extractors.table_extractor import extract_tables_from_pdf
+from src.comparators.text_comparator import compare_text
+from src.extractors.text_extractor import extract_text, parse_section_hierarchy
+from src.core.exceptions import (
+    ConfigurationError,
+    PDFProcessingError,
+    AlignmentError,
+    LLMError,
+)
 
 logger = logging.getLogger(__name__)
-
-
-# =============================================================================
-# Custom Exceptions
-# =============================================================================
-
-
-class PDFProcessingError(Exception):
-    """Raised when PDF loading or extraction fails."""
-
-    pass
-
-
-class AlignmentError(Exception):
-    """Raised when section alignment confidence is too low."""
-
-    pass
-
-
-class LLMError(Exception):
-    """Raised when semantic analysis fails after retries."""
-
-    pass
-
-
-class ConfigurationError(Exception):
-    """Raised when pipeline configuration is invalid."""
-
-    pass
 
 
 # =============================================================================

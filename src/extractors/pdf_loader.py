@@ -18,7 +18,7 @@ from typing import Any, Dict, Optional
 
 import pymupdf as fitz
 
-from src.config import MAX_PDF_SIZE_MB
+from src.core.config import MAX_PDF_SIZE_MB
 
 logger = logging.getLogger(__name__)
 

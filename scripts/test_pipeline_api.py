@@ -20,7 +20,8 @@ from pathlib import Path
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src.pipeline import PDFComparisonPipeline, ComparisonResult, PDFProcessingError
+from src.pipelines.semantic_comparison import PDFComparisonPipeline, ComparisonResult
+from src.core.exceptions import PDFProcessingError
 
 
 def progress_callback(stage: str, pct: float, msg: str):

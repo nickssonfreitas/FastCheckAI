@@ -26,7 +26,7 @@ import pandas as pd
 import pymupdf as fitz
 import pytest
 
-from src.table_extractor import (
+from src.extractors.table_extractor import (
     ExtractedTable,
     TableDetectionError,
     TableExtractionError,
