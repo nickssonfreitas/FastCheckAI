@@ -33,6 +33,44 @@ class SectionAlignmentError(Exception):
     pass
 
 
+def get_section_by_id(sections: Dict[str, Any], section_id: str) -> Optional[Dict[str, Any]]:
+    """
+    Recursively retrieve a section from hierarchical structure by its ID.
+
+    This helper function navigates through nested subsections to find a section
+    with the given ID, regardless of its nesting level.
+
+    Args:
+        sections: Hierarchical sections dictionary from parse_section_hierarchy
+        section_id: Section ID to find (e.g., '1', '1.1', '1.2.3')
+
+    Returns:
+        Section dictionary with keys: id, title, level, content, subsections
+        Returns None if section not found
+
+    Examples:
+        >>> sections = parse_section_hierarchy(text)
+        >>> section = get_section_by_id(sections, '1.2.3')
+        >>> if section:
+        ...     print(section['title'])
+        ... else:
+        ...     print("Section not found")
+    """
+    # Check if section exists at current level
+    if section_id in sections:
+        return sections[section_id]
+
+    # Recursively search in subsections
+    for section_data in sections.values():
+        if "subsections" in section_data and section_data["subsections"]:
+            result = get_section_by_id(section_data["subsections"], section_id)
+            if result is not None:
+                return result
+
+    # Not found
+    return None
+
+
 def align_sections(
     sections_a: Dict[str, Any],
     sections_b: Dict[str, Any],
