@@ -80,6 +80,96 @@ Open `notebooks/pipeline.ipynb` and run cells sequentially.
 
 ---
 
+## 💻 Using the Pipeline API
+
+FastCheckAI provides a Python API for programmatic PDF comparison, enabling integration into scripts and automation workflows without requiring Jupyter notebooks.
+
+### Basic Usage
+
+```python
+from src.pipeline import PDFComparisonPipeline
+
+# Create pipeline with default settings
+pipeline = PDFComparisonPipeline()
+
+# Run comparison
+result = pipeline.run(
+    pdf1_path="data/inputs/astm_2015.pdf",
+    pdf2_path="data/inputs/astm_2016.pdf",
+    report_format="markdown",  # or "html", "json"
+)
+
+# Access results
+print(f"Changes found: {result.statistics['total_changes']}")
+print(f"Critical changes: {result.statistics['severity_breakdown']['CRITICAL']}")
+print(f"Processing time: {result.processing_time_seconds:.2f}s")
+print(f"Report saved to: {result.report_path}")
+```
+
+### Custom Configuration
+
+```python
+# High-accuracy mode (slower but more thorough)
+pipeline = PDFComparisonPipeline(
+    enable_ocr=True,
+    ocr_dpi=600,                   # High quality OCR
+    llm_model="gpt-4o",            # Best semantic analysis
+    fuzzy_match_threshold=0.9,     # Stricter alignment
+    output_dir="outputs/reports/",
+    log_level="INFO"
+)
+
+# Fast mode (for testing or draft comparisons)
+pipeline_fast = PDFComparisonPipeline(
+    enable_ocr=False,              # Skip OCR
+    llm_model="gpt-4o-mini",       # Faster model
+    use_llm_alignment=False,       # Heuristic only
+)
+```
+
+### Progress Tracking
+
+```python
+def progress_handler(stage, progress_pct, message):
+    """Custom progress callback."""
+    print(f"[{stage}] {progress_pct:.0f}% - {message}")
+
+pipeline = PDFComparisonPipeline(
+    progress_callback=progress_handler
+)
+
+result = pipeline.run("pdf1.pdf", "pdf2.pdf")
+```
+
+### Working with Results
+
+```python
+# Access statistics
+total = result.statistics['total_changes']
+critical = result.statistics['severity_breakdown']['CRITICAL']
+
+# Export to dictionary (for JSON)
+result_dict = result.to_dict()
+
+# Convert to pandas DataFrame
+df = result.to_dataframe()
+critical_changes = df[df['severity'] == 'CRITICAL']
+
+# Access individual changes
+for change in result.changes:
+    print(f"Section {change['section_id']}: {change['type']} - {change['severity']}")
+```
+
+### More Examples
+
+See `examples/pipeline_usage.py` for comprehensive usage examples including:
+- Batch processing multiple PDF pairs
+- Error handling patterns
+- Integration with Airflow/FastAPI
+- Command-line script patterns
+
+---
+
 ## 🔧 System Requirements
 
 ### Required Dependencies (Auto-installed)
