@@ -2,12 +2,14 @@
 
 from src.comparators.text_comparator import compare_text
 from src.comparators.semantic_comparator import (
-    analyze_semantic_significance,
-    batch_analyze_changes,
+    classify_semantic_significance,
+    create_semantic_agent,
+    get_semantic_stats,
 )
 
 __all__ = [
     "compare_text",
-    "analyze_semantic_significance",
-    "batch_analyze_changes",
+    "classify_semantic_significance",
+    "create_semantic_agent",
+    "get_semantic_stats",
 ]

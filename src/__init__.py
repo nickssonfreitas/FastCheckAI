@@ -32,13 +32,13 @@ from src.pipelines.semantic_comparison import (
 )
 
 # Extractors
-from src.extractors.pdf_loader import load_pdf, validate_pdf
+from src.extractors.pdf_loader import load_pdf, validate_pdf_size
 from src.extractors.text_extractor import (
     extract_text,
     parse_section_hierarchy,
     is_text_corrupted,
 )
-from src.extractors.table_extractor import extract_tables, extract_tables_from_pdf
+from src.extractors.table_extractor import extract_tables, detect_table_pages
 
 # Processing
 from src.processing.section_aligner import align_sections, get_section_by_id
@@ -46,8 +46,9 @@ from src.processing.section_aligner import align_sections, get_section_by_id
 # Comparators
 from src.comparators.text_comparator import compare_text
 from src.comparators.semantic_comparator import (
-    analyze_semantic_significance,
-    batch_analyze_changes,
+    classify_semantic_significance,
+    create_semantic_agent,
+    get_semantic_stats,
 )
 
 # Reporters
@@ -71,19 +72,20 @@ __all__ = [
     "ComparisonResult",
     # Extractors
     "load_pdf",
-    "validate_pdf",
+    "validate_pdf_size",
     "extract_text",
     "parse_section_hierarchy",
     "is_text_corrupted",
     "extract_tables",
-    "extract_tables_from_pdf",
+    "detect_table_pages",
     # Processing
     "align_sections",
     "get_section_by_id",
     # Comparators
     "compare_text",
-    "analyze_semantic_significance",
-    "batch_analyze_changes",
+    "classify_semantic_significance",
+    "create_semantic_agent",
+    "get_semantic_stats",
     # Reporters
     "generate_report",
     "save_report",

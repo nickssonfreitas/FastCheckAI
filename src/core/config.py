@@ -17,7 +17,8 @@ from typing import List, Optional
 from dotenv import load_dotenv
 
 # Load environment variables from .env file
-env_path = Path(__file__).parent.parent / ".env"
+# After refactoring: src/core/config.py needs to go up 3 levels to reach project root
+env_path = Path(__file__).parent.parent.parent / ".env"
 load_dotenv(dotenv_path=env_path)
 
 

@@ -40,7 +40,7 @@ from src.comparators.semantic_comparator import (
     classify_semantic_significance,
     get_semantic_stats,
 )
-from src.extractors.table_extractor import extract_tables_from_pdf
+from src.extractors.table_extractor import extract_tables, detect_table_pages
 from src.comparators.text_comparator import compare_text
 from src.extractors.text_extractor import extract_text, parse_section_hierarchy
 from src.core.exceptions import (
