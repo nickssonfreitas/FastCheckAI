@@ -17,9 +17,7 @@ Example:
 
 import logging
 from datetime import datetime
-from typing import Any, Dict, List, Optional, Tuple
-
-from src import config
+from typing import Any, Dict, List
 
 logger = logging.getLogger(__name__)
 

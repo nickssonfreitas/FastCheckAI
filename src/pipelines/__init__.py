@@ -1,8 +1,8 @@
 """Pipelines module - Complete PDF comparison pipeline."""
 
 from src.pipelines.semantic_comparison import (
-    PDFComparisonPipeline,
     ComparisonResult,
+    PDFComparisonPipeline,
 )
 
 __all__ = [

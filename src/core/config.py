@@ -122,9 +122,10 @@ MAX_TOKENS: int = int(get_env_variable("MAX_TOKENS", required=False, default="40
 # =============================================================================
 
 FUZZY_MATCH_THRESHOLD: float = float(
-    get_env_variable("FUZZY_MATCH_THRESHOLD", required=False, default="0.8")
+    get_env_variable("FUZZY_MATCH_THRESHOLD", required=False, default="0.6")
 )
-"""Threshold for fuzzy matching section titles (0.0-1.0)."""
+"""Threshold for hybrid fuzzy+content matching (0.0-1.0).
+Lowered from 0.8 to 0.6 to improve alignment rate (Sprint 1, Feature A)."""
 
 SEMANTIC_CONFIDENCE_THRESHOLD: float = float(
     get_env_variable("SEMANTIC_CONFIDENCE_THRESHOLD", required=False, default="0.7")

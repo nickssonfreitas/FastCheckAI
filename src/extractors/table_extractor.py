@@ -19,13 +19,14 @@ import logging
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Dict, List, Optional
 
 import pandas as pd
 import pdfplumber
 import pymupdf as fitz
-
-from src import config
+from PIL import Image
+import pytesseract
+import io
 
 logger = logging.getLogger(__name__)
 
@@ -341,13 +342,16 @@ def detect_table_pages(
 def extract_tables(
     pdf_path: str,
     table_pages: List[int],
-    section_context: Optional[Dict[int, str]] = None) -> TableExtractionResult:
+    section_context: Optional[Dict[int, str]] = None,
+    enable_ocr_fallback: bool = True,
+    corruption_threshold: float = 0.3) -> TableExtractionResult:
     """Extract tables from specified pages using pdfplumber with hybrid strategies.
 
     Opens PDF with pdfplumber only for pages with detected tables.
     Uses multiple extraction strategies automatically:
     1. Default pdfplumber settings (for tables with visible borders)
     2. Text-based strategies (fallback for borderless tables)
+    3. OCR fallback for corrupted text encoding
 
     Converts raw table data to pandas DataFrames with rich metadata.
 
@@ -355,6 +359,8 @@ def extract_tables(
         pdf_path: Path to PDF file
         table_pages: List of page numbers (0-indexed) to extract tables from
         section_context: Optional dict mapping page_num -> section_id
+        enable_ocr_fallback: Enable OCR when text appears corrupted (default: True)
+        corruption_threshold: Threshold for corruption detection (0.0-1.0, default: 0.3)
 
     Returns:
         TableExtractionResult with extracted tables and metadata
@@ -385,8 +391,11 @@ def extract_tables(
 
         logger.info(
             f"Starting hybrid table extraction from {len(table_pages)} pages "
-            f"(default + text-based strategies)"
+            f"(default + text-based + OCR strategies)"
         )
+
+        # Open PyMuPDF document for OCR fallback
+        pdf_doc = fitz.open(pdf_path) if enable_ocr_fallback else None
 
         # Open PDF with pdfplumber
         with pdfplumber.open(pdf_path) as pdf:
@@ -419,14 +428,50 @@ def extract_tables(
                     # Get section context for this page
                     section_id = section_context.get(page_num) if section_context else None
 
+                    # Get table objects with bounding boxes
+                    table_objects = page.find_tables()
+
                     # Convert each raw table to DataFrame with metadata
                     for table_index, raw_table in enumerate(raw_tables):
+                        # Check if table text is corrupted
+                        table_text = " ".join([" ".join([str(cell) for cell in row if cell]) for row in raw_table])
+                        is_corrupted = enable_ocr_fallback and _is_text_corrupted(table_text, corruption_threshold)
+
+                        if is_corrupted and pdf_doc:
+                            logger.info(f"Page {page_num + 1}, Table {table_index + 1}: Corrupted text detected (OCR fallback enabled)")
+
+                            # Get table bounding box
+                            bbox = None
+                            if table_index < len(table_objects):
+                                bbox = table_objects[table_index].bbox  # (x0, y0, x1, y1)
+                                logger.debug(f"Page {page_num + 1}, Table {table_index + 1}: bbox from pdfplumber={bbox}")
+                            else:
+                                # Fallback: use full page dimensions
+                                logger.warning(f"Page {page_num + 1}, Table {table_index + 1}: Table object not found, using full page as bbox")
+                                bbox = (0, 0, page.width, page.height)
+
+                            if bbox:
+                                # Extract using OCR
+                                ocr_table = _extract_table_with_ocr(pdf_doc, page_num, bbox, dpi=300)
+
+                                if ocr_table and len(ocr_table) > 0:
+                                    raw_table = ocr_table
+                                    extraction_method = "ocr_tesseract"
+                                    logger.info(f"Page {page_num + 1}, Table {table_index + 1}: OCR extraction successful ({len(ocr_table)} rows)")
+                                else:
+                                    logger.warning(f"Page {page_num + 1}, Table {table_index + 1}: OCR extraction failed (empty result), using corrupted data")
+                                    extraction_method = "pdfplumber_corrupted"
+                            else:
+                                extraction_method = "pdfplumber_corrupted"
+                        else:
+                            extraction_method = "pdfplumber_hybrid"
+
                         extracted_table = _convert_to_dataframe(
                             raw_table=raw_table,
                             page_num=page_num,
                             table_index=table_index,
                             section_context=section_id,
-                            extraction_method="pdfplumber_hybrid",
+                            extraction_method=extraction_method,
                         )
 
                         if extracted_table:
@@ -444,6 +489,10 @@ def extract_tables(
         extraction_time = time.time() - start_time
         result.extraction_time_seconds = extraction_time
 
+        # Close PyMuPDF document if opened
+        if pdf_doc:
+            pdf_doc.close()
+
         logger.info(
             f"Table extraction complete: {result.total_tables_extracted} tables "
             f"from {result.total_pages_detected} pages in {extraction_time:.2f}s"
@@ -454,12 +503,106 @@ def extract_tables(
     except Exception as e:
         error_msg = f"Table extraction failed: {str(e)}"
         logger.error(error_msg)
+        # Close PyMuPDF document on error
+        if 'pdf_doc' in locals() and pdf_doc:
+            pdf_doc.close()
         raise TableExtractionError(error_msg) from e
 
 
 # =============================================================================
 # Helper Functions
 # =============================================================================
+
+
+def _is_text_corrupted(text: str, threshold: float = 0.3) -> bool:
+    """Check if extracted text appears corrupted (high ratio of special characters).
+
+    Args:
+        text: Text to check
+        threshold: Corruption threshold (0.0 to 1.0)
+
+    Returns:
+        True if text appears corrupted
+    """
+    if not text or len(text) == 0:
+        return False
+
+    # Count characters with code points > 127 (non-ASCII)
+    special_chars = sum(1 for c in text if ord(c) > 127)
+    corruption_rate = special_chars / len(text)
+
+    return corruption_rate > threshold
+
+
+def _extract_table_with_ocr(
+    pdf_doc: fitz.Document,
+    page_num: int,
+    bbox: tuple,
+    dpi: int = 300
+) -> List[List[str]]:
+    """Extract table using OCR on the specified region.
+
+    Args:
+        pdf_doc: PyMuPDF document
+        page_num: Page number (0-indexed)
+        bbox: Bounding box (x0, y0, x1, y1) of table region
+        dpi: DPI for OCR rendering
+
+    Returns:
+        Extracted table as list of lists
+    """
+    try:
+        page = pdf_doc[page_num]
+
+        # Render the table region as image
+        # Convert bbox coordinates to PyMuPDF rect
+        x0, y0, x1, y1 = bbox
+        rect = fitz.Rect(x0, y0, x1, y1)
+
+        # Render at higher resolution for better OCR
+        mat = fitz.Matrix(dpi / 72, dpi / 72)
+        pix = page.get_pixmap(matrix=mat, clip=rect)
+
+        # Convert to PIL Image
+        img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+
+        # Use Tesseract to extract text with TSV output for table structure
+        ocr_data = pytesseract.image_to_data(img, output_type=pytesseract.Output.DICT)
+
+        # Reconstruct table structure from OCR data
+        # Group text by lines (y-coordinate) and columns (x-coordinate)
+        lines = {}
+        for i, text in enumerate(ocr_data['text']):
+            if text.strip():
+                conf = int(ocr_data['conf'][i])
+                if conf > 0:  # Only use confident OCR results
+                    top = ocr_data['top'][i]
+                    left = ocr_data['left'][i]
+
+                    # Group by line (10px tolerance)
+                    line_key = round(top / 10) * 10
+                    if line_key not in lines:
+                        lines[line_key] = []
+                    lines[line_key].append((left, text))
+
+        # Sort lines by y-coordinate
+        sorted_lines = sorted(lines.items())
+
+        # Convert to table structure
+        table_data = []
+        for _, cells in sorted_lines:
+            # Sort cells by x-coordinate
+            sorted_cells = sorted(cells, key=lambda x: x[0])
+            row = [cell[1] for cell in sorted_cells]
+            if row:  # Only add non-empty rows
+                table_data.append(row)
+
+        logger.debug(f"OCR extracted {len(table_data)} rows from table region")
+        return table_data
+
+    except Exception as e:
+        logger.warning(f"OCR table extraction failed: {e}")
+        return []
 
 
 def _convert_to_dataframe(

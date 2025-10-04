@@ -27,28 +27,28 @@ Example:
 import logging
 import os
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Literal, Optional
 
-from src.core import config
-from src.extractors.pdf_loader import load_pdf
-from src.reporters.report_generator import generate_report, save_report
-from src.processing.section_aligner import align_sections, get_section_by_id
 from src.comparators.semantic_comparator import (
-    create_semantic_agent,
     classify_semantic_significance,
+    create_semantic_agent,
     get_semantic_stats,
 )
-from src.extractors.table_extractor import extract_tables, detect_table_pages
+from src.comparators.table_comparator import compare_tables
 from src.comparators.text_comparator import compare_text
-from src.extractors.text_extractor import extract_text, parse_section_hierarchy
 from src.core.exceptions import (
-    ConfigurationError,
-    PDFProcessingError,
     AlignmentError,
+    ConfigurationError,
     LLMError,
+    PDFProcessingError,
 )
+from src.extractors.pdf_loader import load_pdf
+from src.extractors.table_extractor import detect_table_pages, extract_tables
+from src.extractors.text_extractor import extract_text, parse_section_hierarchy
+from src.processing.section_aligner import align_sections, get_section_by_id
+from src.reporters.report_generator import generate_report, save_report
 
 logger = logging.getLogger(__name__)
 
@@ -240,6 +240,9 @@ class PDFComparisonPipeline:
         # Alignment settings
         fuzzy_match_threshold: float = 0.8,
         use_llm_alignment: bool = True,
+        # Table comparison settings (Feature 8)
+        enable_table_comparison: bool = False,
+        table_tolerance: float = 0.01,
         # Output settings
         output_dir: str | Path = "data/outputs",
         default_report_format: Literal["markdown", "html", "json"] = "markdown",
@@ -264,6 +267,8 @@ class PDFComparisonPipeline:
         self.llm_temperature = llm_temperature
         self.fuzzy_match_threshold = fuzzy_match_threshold
         self.use_llm_alignment = use_llm_alignment
+        self.enable_table_comparison = enable_table_comparison
+        self.table_tolerance = table_tolerance
         self.output_dir = Path(output_dir)
         self.default_report_format = default_report_format
         self.progress_callback = progress_callback
@@ -287,7 +292,10 @@ class PDFComparisonPipeline:
         self.last_result: Optional[ComparisonResult] = None
         self._semantic_agent = None  # Lazy loading
 
-        self.logger.info(f"Pipeline initialized: OCR={enable_ocr}, Model={llm_model}")
+        self.logger.info(
+            f"Pipeline initialized: OCR={enable_ocr}, Model={llm_model}, "
+            f"Tables={'ON (tol=±' + str(table_tolerance) + ')' if enable_table_comparison else 'OFF'}"
+        )
 
     def _validate_config(
         self,
@@ -412,6 +420,26 @@ class PDFComparisonPipeline:
             )
             self.logger.info(f"Text extracted: {len(text1)} / {len(text2)} characters")
 
+            # Stage 2.5: Extract tables if enabled (35-40%)
+            tables1, tables2 = [], []
+            table_comparison_results = []
+            if self.enable_table_comparison:
+                self._progress("extraction", 35, "Detecting tables in PDF 1")
+                table_pages1 = detect_table_pages(pdf1_doc)
+                self._progress("extraction", 36, "Extracting tables from PDF 1")
+                result1 = extract_tables(str(pdf1_path), table_pages1)
+                tables1 = [t.data for t in result1.tables]  # Extract DataFrames
+
+                self._progress("extraction", 38, "Detecting tables in PDF 2")
+                table_pages2 = detect_table_pages(pdf2_doc)
+                self._progress("extraction", 39, "Extracting tables from PDF 2")
+                result2 = extract_tables(str(pdf2_path), table_pages2)
+                tables2 = [t.data for t in result2.tables]  # Extract DataFrames
+
+                self.logger.info(
+                    f"Tables extracted: {len(tables1)} from PDF1, {len(tables2)} from PDF2"
+                )
+
             # Stage 3: Parse sections (40-50%)
             self._progress("parsing", 42, "Parsing sections from PDF 1")
             sections_a = parse_section_hierarchy(text1)
@@ -446,7 +474,7 @@ class PDFComparisonPipeline:
             # Stage 5-6: Compare and analyze (60-85%)
             self._progress("comparison", 65, "Comparing text content")
             changes = self._compare_and_analyze(
-                alignment_result, sections_a, sections_b
+                alignment_result, sections_a, sections_b, tables1, tables2
             )
             self.logger.info(f"Comparison complete: {len(changes)} changes detected")
 
@@ -494,6 +522,8 @@ class PDFComparisonPipeline:
         alignment_result: Dict,
         sections_a: Dict,
         sections_b: Dict,
+        tables1: List = None,
+        tables2: List = None,
     ) -> List[Dict]:
         """
         Compare aligned sections and perform semantic analysis.
@@ -506,6 +536,10 @@ class PDFComparisonPipeline:
             Hierarchical sections from PDF 1
         sections_b : dict
             Hierarchical sections from PDF 2
+        tables1 : list, optional
+            Extracted tables from PDF 1
+        tables2 : list, optional
+            Extracted tables from PDF 2
 
         Returns
         -------
@@ -513,6 +547,8 @@ class PDFComparisonPipeline:
             List of change objects with semantic analysis
         """
         changes = []
+        tables1 = tables1 or []
+        tables2 = tables2 or []
         self.logger.debug(f"Comparing {len(alignment_result['alignments'])} alignments")
 
         # Create semantic agent (lazy loading)
@@ -599,6 +635,62 @@ class PDFComparisonPipeline:
                     "confidence": 1.0,
                 }
             )
+
+        # Compare tables if enabled (Feature 8)
+        if self.enable_table_comparison and tables1 and tables2:
+            self.logger.info(f"Comparing tables: {len(tables1)} vs {len(tables2)}")
+
+            # Compare tables pairwise (simple approach: compare by position)
+            min_tables = min(len(tables1), len(tables2))
+            for i in range(min_tables):
+                try:
+                    table_result = compare_tables(
+                        tables1[i],
+                        tables2[i],
+                        tolerance=self.table_tolerance
+                    )
+
+                    # Only add to changes if there are actual differences
+                    if table_result["summary"]["total_changes"] > 0:
+                        changes.append({
+                            "section_id": f"table_{i+1}",
+                            "section_title": f"Table {i+1}",
+                            "type": "table_modified",
+                            "severity": "MEDIUM",  # Table changes are usually medium importance
+                            "confidence": 1.0,
+                            "table_comparison": {
+                                "cell_changes": len(table_result["cell_changes"]),
+                                "ignored_changes": len(table_result["ignored_changes"]),
+                                "structural_changes": table_result["structural_changes"],
+                                "tolerance": self.table_tolerance,
+                            }
+                        })
+                        self.logger.info(
+                            f"Table {i+1}: {table_result['summary']['total_changes']} changes detected "
+                            f"({table_result['summary']['total_ignored']} within tolerance)"
+                        )
+                except Exception as e:
+                    self.logger.warning(f"Failed to compare table {i+1}: {e}")
+
+            # Report added/removed tables
+            if len(tables2) > len(tables1):
+                for i in range(len(tables1), len(tables2)):
+                    changes.append({
+                        "section_id": f"table_{i+1}",
+                        "section_title": f"Table {i+1}",
+                        "type": "table_added",
+                        "severity": "SIGNIFICANT",
+                        "confidence": 1.0,
+                    })
+            elif len(tables1) > len(tables2):
+                for i in range(len(tables2), len(tables1)):
+                    changes.append({
+                        "section_id": f"table_{i+1}",
+                        "section_title": f"Table {i+1}",
+                        "type": "table_removed",
+                        "severity": "SIGNIFICANT",
+                        "confidence": 1.0,
+                    })
 
         return changes
 

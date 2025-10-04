@@ -14,7 +14,7 @@ Example:
 import logging
 import os
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 import pymupdf as fitz
 

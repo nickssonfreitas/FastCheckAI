@@ -26,7 +26,7 @@ from agno.agent import Agent
 from openai import OpenAI
 from tenacity import retry, stop_after_attempt, wait_exponential
 
-from src import config
+from src.core import config
 
 logger = logging.getLogger(__name__)
 

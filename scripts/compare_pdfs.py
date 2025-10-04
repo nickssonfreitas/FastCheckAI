@@ -38,6 +38,9 @@ Exemplos:
 
   # Modo rápido (sem análise semântica LLM)
   python scripts/compare_pdfs.py doc1.pdf doc2.pdf --fast
+
+  # Com comparação de tabelas numéricas
+  python scripts/compare_pdfs.py doc1.pdf doc2.pdf --compare-tables --table-tolerance 0.05
         """
     )
 
@@ -83,6 +86,17 @@ Exemplos:
         default="gpt-4o",
         help="Modelo LLM para análise semântica (default: gpt-4o)"
     )
+    parser.add_argument(
+        "--compare-tables",
+        action="store_true",
+        help="Habilita comparação de tabelas numéricas (Feature 8)"
+    )
+    parser.add_argument(
+        "--table-tolerance",
+        type=float,
+        default=0.01,
+        help="Tolerância para comparação numérica de tabelas (default: 0.01)"
+    )
 
     args = parser.parse_args()
 
@@ -109,12 +123,15 @@ Exemplos:
     print(f"   Formato: {args.format}")
     print(f"   OCR: {'Desabilitado' if args.no_ocr else 'Habilitado'}")
     print(f"   Análise Semântica: {'Desabilitada (modo rápido)' if args.fast else 'Habilitada'}")
+    print(f"   Comparação de Tabelas: {'Habilitada (tolerância: ±{:.2f})'.format(args.table_tolerance) if args.compare_tables else 'Desabilitada'}")
     print()
 
     try:
         pipeline = PDFComparisonPipeline(
             enable_ocr=not args.no_ocr,
             llm_model=args.model,
+            enable_table_comparison=args.compare_tables,
+            table_tolerance=args.table_tolerance,
             output_dir=str(output_dir),
             log_level="INFO",
         )

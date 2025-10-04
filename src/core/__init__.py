@@ -3,11 +3,11 @@
 # Import config as namespace module
 from src.core import config
 from src.core.exceptions import (
-    FastCheckAIError,
-    ConfigurationError,
-    PDFProcessingError,
     AlignmentError,
+    ConfigurationError,
+    FastCheckAIError,
     LLMError,
+    PDFProcessingError,
     ReportGenerationError,
 )
 
